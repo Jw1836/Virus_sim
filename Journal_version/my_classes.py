@@ -3,48 +3,71 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib
 import random
-matplotlib.use('tkagg')  # requires TkInter
+matplotlib.use('tkagg')  # for GUI-based animation
 
 
-class Node:
-    """
-    A Node class representing a point that has a position (x, y).
-    """
-    def __init__(self, x_pos, y_pos, Type, delta, z_init):
-        self.x_pos = x_pos
-        self.y_pos = y_pos
-        #phi variables  - velocity
+# ---------------------------
+# ResourceNode and PopulationNode Definitions
+# ---------------------------
+
+class ResourceNode:
+    def __init__(self, x, y, r_to_n_infection_rate_1, r_to_n_infection_rate_2, v_1_init, v_2_init):
+        self.x_pos = x
+        self.y_pos = y
+        self.r_to_n_infection_rate_1 = r_to_n_infection_rate_1
+        self.r_to_n_infection_rate_2 = r_to_n_infection_rate_2
+        self.v_1 = v_1_init
+        self.v_2 = v_2_init
+        self.color = 'green'
+        self.position = (x, y)
+        self.x_vel = 0
+        self.y_vel = 0
+
+    def update_position(self, dx, dy):
+        self.x_pos += dx
+        self.y_pos += dy
+        self.position = (self.x_pos, self.y_pos)
+
+    
+    def check_boundary_cross(self, center, length):
+        # Boundary limits based on the center and the length of the square
+        left = center - length/2
+        right = center + length/2
+        bottom = center - length/2
+        top = center + length/2
+
+        # Check for crossing the x-boundary
+        if self.x_vel > 0 and self.x_pos >= right:  # Moving right and crossed the right boundary
+            self.x_vel = -self.x_vel  # Reverse x-velocity (bounce off right boundary)
+        elif self.x_vel < 0 and self.x_pos <= left:  # Moving left and crossed the left boundary
+            self.x_vel = -self.x_vel  # Reverse x-velocity (bounce off left boundary)
+
+        # Check for crossing the y-boundary
+        if self.y_vel > 0 and self.y_pos >= top:  # Moving up and crossed the top boundary
+            self.y_vel = -self.y_vel  # Reverse y-velocity (bounce off top boundary)
+        elif self.y_vel < 0 and self.y_pos <= bottom:  # Moving down and crossed the bottom boundary
+            self.y_vel = -self.y_vel  # Reverse y-velocity (bounce off bottom boundary)
+
+
+class PopulationNode:
+    def __init__(self, x, y, infection_rate_1, recovery_rate_1, infection_rate_2, recovery_rate_2, v_1_init, v_2_init):
+        self.x_pos = x
+        self.y_pos = y
+        self.beta_1 = infection_rate_1
+        self.delta_1 = recovery_rate_1
+        self.beta_2 = infection_rate_2
+        self.delta_2 = recovery_rate_2
+        self.v_1 = v_1_init
+        self.v_2 = v_2_init
+        self.color = "red" if v_1_init > 0 or v_2_init > 0 else "blue"
+        self.position = (x, y)
         self.x_vel = random.gauss(0, 1) * 0.5
         self.y_vel = random.gauss(0, 1) * 0.5
-        #delta_i is birth + recovery rate, delta_w is decay rate in resource
-        self.delta = delta
-        self.NodeType = Type
-        if(self.NodeType == "Infected"):
-            self.color = "red"
-            self.concentration = 1
 
-        elif(self.NodeType == "Susceptible"):
-            self.color = "blue"
-            self.concentration = 0
-
-        elif(self.NodeType == "Shared Resource"):
-            self.color = "green"
-            self.x_vel = 0
-            self.y_vel = 0
-            self.concentration = z_init
-
-        self.position = (self.x_pos, self.y_pos)  # Initialize node position (x, y)
-        
-        
     def update_position(self, dx, dy):
-        """
-        Update the position of the node by adding the displacements (dx, dy).
-        """
-        x, y = self.position
-        self.position = (x + dx, y + dy)
-        self.x_pos = x + dx
-        self.y_pos = y + dy
-
+        self.x_pos += dx
+        self.y_pos += dy
+        self.position = (self.x_pos, self.y_pos)
 
     def check_boundary_cross(self, center, length):
         # Boundary limits based on the center and the length of the square
@@ -64,6 +87,11 @@ class Node:
             self.y_vel = -self.y_vel  # Reverse y-velocity (bounce off top boundary)
         elif self.y_vel < 0 and self.y_pos <= bottom:  # Moving down and crossed the bottom boundary
             self.y_vel = -self.y_vel  # Reverse y-velocity (bounce off bottom boundary)
+
+
+# ---------------------------
+# Animation Class Definition
+# ---------------------------
 
 class Animation:
     def __init__(self):
@@ -124,32 +152,3 @@ class Animation:
         
         # Redraw the plot with the updated nodes
         plt.draw()
-
-# # Example Usage:
-# # Create an instance of the Animation class
-# anim = Animation()
-
-# # Create a list of nodes (initial positions)
-# nodes = [Node(1, 1), Node(2, 2), Node(3, 3)]
-
-# # Simulated node movements (for example, updating by moving each node by a certain displacement)
-# node_positions = [
-#     [(1, 1), (2, 2), (3, 3)],  # Initial positions
-#     [(2, 2), (3, 3), (4, 4)],  # First update
-#     [(3, 3), (4, 4), (5, 5)],  # Second update
-#     [(4, 4), (5, 5), (6, 6)],  # Third update
-# ]
-
-# # Loop through the node positions and update the animation
-# for positions in node_positions:
-#     # Update the node positions
-#     for i, pos in enumerate(positions):
-#         print("pos: ", pos)
-#         dx, dy = pos[0] - nodes[i].position[0], pos[1] - nodes[i].position[1]
-#         nodes[i].update_position(dx, dy)
-    
-#     # Update the plot with the new node positions
-#     anim.update(nodes)
-#     plt.pause(0.5)  # Pause to see each update
-
-# plt.show()  # Display the final animation

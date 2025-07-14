@@ -5,26 +5,24 @@ from AnimationClass import Animation
 import matplotlib.pyplot as plt
 import sys
 ########################
-def get_adj_matrix(node_list):
-    r = 10
-    adj_matrix = np.zeros((len(node_list), len(node_list)))
-    for i in range(len(node_list)):
-        for j in range(len(node_list)):
-            node_i_pos = node_list[i].position
-            node_j_pos = node_list[j].position
-            diff = np.subtract(node_i_pos, node_j_pos)
-            if(np.linalg.norm(diff) < r):
-                adj_matrix[i, j] = np.exp(-1 * np.linalg.norm(diff) ** 2)
-            else:
-                adj_matrix[i, j] = 0
+
+def get_adj_matrix(node_list, r=10):
+    n = len(node_list)
+    adj_matrix = np.zeros((n, n))
+
+    for i in range(n):
+        for j in range(i):  # Only compute lower triangle (i > j)
+            pos_i = np.array(node_list[i].position)
+            pos_j = np.array(node_list[j].position)
+            d = np.linalg.norm(pos_i - pos_j)
+
+            if d < r:
+                weight = np.exp(-d**2)
+                adj_matrix[i, j] = weight
+                adj_matrix[j, i] = weight  # Symmetric
+
     return adj_matrix
 
-def get_B_matrix(num_nodes, A_t):
-    B_t = np.zeros((num_nodes, num_nodes))
-    for i in range(num_nodes):
-        for j in range(num_nodes):
-            B_t[i, j] = beta * A_t[i, j]
-    return B_t
 
 def get_X_matrix(node_list):
     num_nodes = len(node_list)
@@ -36,18 +34,17 @@ def get_X_matrix(node_list):
                 X_t[i, j] = this_node.concentration
     return X_t
 
-def get_b_c_matrix(node_list):
-    r = 10
-    n = len(node_list[:-1])
+def get_b_c_matrix(node_list, delta_w, r=10):
+    n = len(node_list) - 1  # Exclude shared resource
     col_matrix = np.zeros((n, 1))
+
     for i in range(n):
-        this_node = node_list[i]
-        node_i_pos = this_node.position
-        if(np.linalg.norm(node_i_pos) < r):
-            c_i = np.exp(-1 * np.linalg.norm(node_i_pos) ** 2)
-            col_matrix[i, 0] = c_i
-        else:
-            col_matrix[i, 0] = 0
+        pos = np.array(node_list[i].position)
+        d = np.linalg.norm(pos)
+
+        if d < r:
+            col_matrix[i, 0] = delta_w * np.exp(-d**2)
+
     return col_matrix
 
 def get_x_vec(node_list):
@@ -63,7 +60,7 @@ def find_avg(node_list):
     n = len(node_list[:-1])
     sum = 0
     for i in range(n):
-        this_node = node_list[n]
+        this_node = node_list[i]
         sum = sum + this_node.concentration
     return sum / n
 
@@ -76,7 +73,6 @@ if __name__ == "__main__":
     #animation object
     anim = Animation()
     #
-    epsilon = 0.01
     center = 2.5
     scaling = 5 # keeps the values to start inside the box
     #variables
@@ -109,6 +105,7 @@ if __name__ == "__main__":
     delta_t = 0.05
     avg_val_list = []
     eig_val = []
+    sr_vals = []
     t_val = []
     #for each time step:
     while t_start < sim_time:
@@ -116,19 +113,16 @@ if __name__ == "__main__":
         D_t = np.eye(num_nodes) * delta_i
         # find the adjacency matrix
         A_t = get_adj_matrix(node_list[:-1])
-        B_t = get_B_matrix(num_nodes, A_t)
+        B_t = beta *  A_t
         X_t = get_X_matrix(node_list[:-1])
-        b_t = get_b_c_matrix(node_list)
+        b_t = get_b_c_matrix(node_list, delta_w)
         c_t = b_t
-        B_bar_t = np.eye(num_nodes) * beta
-        B_t = B_bar_t @ A_t
         x_vec = get_x_vec(node_list)
-        z = np.array([[w_1.concentration]])
+        z = np.array([[node_list[-1].concentration]])
         y_t = np.block([
             [x_vec],
             [z]
         ])
-
         zero_vec_0 = np.zeros((X_t.shape[0], 1))
         zero_vec_1 = np.zeros((1, X_t.shape[0] + 1))
         X_y_t = np.block([
@@ -143,15 +137,18 @@ if __name__ == "__main__":
             [D_t, zero_vec_0],
             [zero_vec_0.T, np.array([[delta_w]])]
         ])
-
+        #print(B_w)
         I = np.eye(X_y_t.shape[0])
         y_dot = (-1 * D_w + (I - X_y_t) @ B_w) @ y_t
         y_t_1 = delta_t * y_dot + y_t
         eigvals, _ = np.linalg.eig(B_w - D_w)
-        eig_val.append(np.max(np.real(eigvals)))
+        eig_val.append(np.max(eigvals))
         t_val.append(t_start)
+
         avg_val = find_avg(node_list)
         avg_val_list.append(avg_val)
+        sr_vals.append(w_1.concentration)
+
         #update the position of all the nodes, and then plot them in a animation
         for i in range(len(node_list)):
             this_node = node_list[i]
@@ -159,11 +156,9 @@ if __name__ == "__main__":
             this_node.update_position(dx, dy)
             #if node comes in contact with bound, phi -> -phi
             this_node.check_boundary_cross(center, length)
-
-        #update the concentration of the nodes
-        for i in range(len(node_list)):
-            this_node = node_list[i]
             this_node.concentration = y_t_1[i, 0]
+
+
         #update the time 
         t_start = t_start + delta_t
         anim.update(node_list)
@@ -177,8 +172,11 @@ plt.xlabel('t')
 plt.ylabel('eig')
 plt.show()
 
-plt.plot(t_val, avg_val_list)
+plt.plot(t_val, avg_val_list, color = "blue", label = "node")
+plt.plot(t_val, sr_vals, color = "red", label = "shared resource")
 plt.title("Average Infection over Time")
 plt.xlabel('t')
 plt.ylabel('infection')
+plt.legend()
 plt.show()
+
