@@ -11,11 +11,13 @@ matplotlib.use('tkagg')  # for GUI-based animation
 # ---------------------------
 
 class ResourceNode:
-    def __init__(self, x, y, r_to_n_infection_rate_1, r_to_n_infection_rate_2, v_1_init, v_2_init):
+    def __init__(self, x, y, r_to_n_infection_rate_1, r_to_n_infection_rate_2, v_1_init, v_2_init, delta_1_w, delta_2_w):
         self.x_pos = x
         self.y_pos = y
         self.r_to_n_infection_rate_1 = r_to_n_infection_rate_1
         self.r_to_n_infection_rate_2 = r_to_n_infection_rate_2
+        self.delta_1_w = delta_1_w
+        self.delta_2_w = delta_2_w
         self.v_1 = v_1_init
         self.v_2 = v_2_init
         self.color = 'green'
@@ -104,14 +106,16 @@ class Animation:
         
         # Handle list to store the patches and line objects
         self.handle = []
-        
+        self.texts = []
         # Parameters to define the size of the plot
         self.length = 5
         self.width = 5
         
         # Set axis limits
-        plt.axis([-2.0*self.length, 2.0*self.length, -2.0*self.length, 2.0*self.length])
-        
+        #plt.axis([-2.0*self.length, 2.0*self.length, -2.0*self.length, 2.0*self.length])
+        plt.xlim(-1, 6)
+        # Set y-axis limits
+        plt.ylim(-1, 6)
         # Add a black square centered at (2.5, 2.5) with side length of 10, just the outline
         square = mpatches.Rectangle(
             (self.center[0] - 2.5, self.center[1] - 2.5),  # bottom-left corner (center - radius)
@@ -138,10 +142,13 @@ class Animation:
             # For each node in the list, create a patch (circle for the node)
             for node in self.node_list:
                 x, y = node.position  # Get the current position of the node
-                circle = mpatches.Circle((x, y), radius=0.25, color=node.color, lw=1)
+                circle = mpatches.Circle((x, y), radius=0.1, color=node.color, lw=1)
                 self.ax.add_patch(circle)  # Add the circle to the axes
                 self.handle.append(circle)  # Store the handle for future updates
-            
+                            # Add text label for v_1 and v_2
+                txt = self.ax.text(x + 0.3, y + 0.3, f"v₁={node.v_1:.2f}\nv₂={node.v_2:.2f}",
+                                   fontsize=7, color='black', ha='left')
+                self.texts.append(txt)
             self.FlagInit = False  # Set flag to False so this block doesn't run again
         
         else:
@@ -149,6 +156,10 @@ class Animation:
             for i, node in enumerate(self.node_list):
                 x, y = node.position  # Get the updated position
                 self.handle[i].center = (x, y)  # Update the position of the circle (node)
+
+                # Update text position and values
+                self.texts[i].set_position((x + 0.3, y + 0.3))
+                self.texts[i].set_text(f"v₁={node.v_1:.2f}\nv₂={node.v_2:.2f}")
         
         # Redraw the plot with the updated nodes
         plt.draw()

@@ -98,29 +98,95 @@ def get_x_vec(nodes, k, n):
         col_matrix[i, 0] = node_x_val
     return col_matrix
 
+def find_avg(node_list, n, k):
+    sum = 0
+    for i in range(n):
+        this_node = node_list[i]
+        if(k == 1):
+            concentration = this_node.v_1
+        else:
+            concentration = this_node.v_2
+
+        sum = sum + concentration
+    return sum / n
+
+def diff_equation(k, nodes, alpha):
+        A = get_adj_matrix(nodes, n, r=10)
+        # k = 1
+        x_k_vec = get_x_vec(nodes, k, n)
+        x_1_vec = get_x_vec(nodes, 1, n)
+        w_k_vec = get_w_vec(nodes, k, m)
+
+        x_2_vec = get_x_vec(nodes, 2, n)
+
+        B_k = get_B_k(A, n, nodes, k)
+        B_k_w = get_B_k_w(n, nodes, k)
+        C_k_w = B_k_w.T #for homogenous case
+        delta_k = nodes[0].delta_1 if k == 1 else nodes[0].delta_2
+        delta_k_w = nodes[-1].delta_1_w if k == 1 else nodes[-1].delta_2_w
+        D_k = np.eye(n) * delta_k
+        D_k_w = np.eye(m) * delta_k_w
+        A_k_w =  [[alpha for _ in range(m)] for _ in range(m)] - alpha * m * np.eye(m)
+        A_k_w_diag = np.diag(np.diag(A_k_w))
+        #start building the full block matrices for k= 1
+        y_k_1 = np.block([
+            [x_k_vec],
+            [w_k_vec]
+        ])
+        X_y_1 = np.block([
+            [np.diag(x_1_vec.flatten()), np.zeros((n, m))],
+            [np.zeros((m, m + n))]
+        ])
+        X_y_2 = np.block([
+            [np.diag(x_2_vec.flatten()), np.zeros((n, m))],
+            [np.zeros((m, m + n))]
+        ])
+        B_k_f = np.block([
+            [B_k, B_k_w],
+            [C_k_w, A_k_w - A_k_w_diag]
+        ])
+        D_k_f= np.block([
+            [D_k, np.zeros((n, m))],
+            [np.zeros((m, n)), D_k_w - A_k_w_diag]
+        ])
+
+        y_k_2 = ((-1 * D_k_f + (np.eye(n + m) - (X_y_1 + X_y_2)) @ B_k_f) @ y_k_1) * delta_t + y_k_1
+        return y_k_2, B_k_f, D_k_f
 
 if __name__ == "__main__":
-    n = 5 # number of population nodes
+    n = 7 # number of population nodes
     m = 2 # number of resource nodes 
-    beta_1 = 0.1 # infection rate virus 1
-    delta_1 = 0.1 # recovery rate 1
-    beta_2 = 0.1 # infection rate virus 2
-    delta_2 = 0.1 # recovery rate 2 
-    v_1_init = 0.5 
-    v_2_init = 0.5
+    alpha = 0.1 # rate of infection from rnode to rnode
+    beta_1 = 1 # infection rate virus 1
+    delta_1 = 3 # recovery rate 1
+    beta_2 = 1.5 # infection rate virus 2
+    delta_2 = 3 # recovery rate 2 
+    # v_1_init = 0.5 
+    # v_2_init = 0.5
     r_to_n_infection_rate_1 = 0.2
     r_to_n_infection_rate_2 = 0.3
     scaling = 5
+    bad_guys_1 = [0, 2]
+    bad_guys_2 = [3, 5]
     nodes = []
-    for i in range(n):
-        x_pos = random.random() * scaling
-        y_pos = random.random() * scaling
-        nodes.append(PopulationNode(x_pos, y_pos, beta_1, delta_1, beta_2, delta_2, v_1_init, v_2_init))
+    for i in range(n + m):
+        v_1_init = 0
+        v_2_init = 0
+        if(i in bad_guys_1):
+            v_1_init = 0.5
+        elif(i in bad_guys_2):
+            v_2_init = 0.5
+        else:
+            pass 
 
-    for i in range(m):
         x_pos = random.random() * scaling
-        y_pos = random.random() * scaling
-        nodes.append(ResourceNode(x_pos, y_pos, r_to_n_infection_rate_1, r_to_n_infection_rate_2, v_1_init, v_2_init))
+        y_pos = random.random() * scaling    
+
+        if(i < n):
+            nodes.append(PopulationNode(x_pos, y_pos, beta_1, delta_1, beta_2, delta_2, v_1_init, v_2_init))
+        else:
+            nodes.append(ResourceNode(x_pos, y_pos, r_to_n_infection_rate_1, r_to_n_infection_rate_2, v_1_init, v_2_init, delta_1, delta_2))
+
 
     # Create and run animation
     anim = Animation()
@@ -129,25 +195,33 @@ if __name__ == "__main__":
     delta_t = 0.05
     length = 5
     center = 2.5
+    avg_val_list_v1 = []
+    eig_val_v1 = []
+    sr_vals_v1 = []
+    avg_val_list_v2 = []
+    eig_val_v2 = []
+    sr_vals_v2 = []
+    t_val = []
         #for each time step:
     while t_start < sim_time:
         #for each timestep solve the differential equation
-        A = get_adj_matrix(nodes, n, r=10)
-        # k = 1
-        x_1_vec = get_x_vec(nodes, 1, n)
-        w_1_vec = get_w_vec(nodes, 1, m)
-        y_t_1 = np.block([
-            [x_1_vec],
-            [w_1_vec]
-        ])
-        X_y_1 = np.block([
-            [np.diag(x_1_vec.flatten()), np.zeros_like(x_1_vec)],
-            [np.zeros((1, x_1_vec.shape[0] + 1))]
-        ])
-        B_1 = get_B_k(A, n, nodes, 1)
-        B_1_w = get_B_k_w(n, nodes, 1)
-        C_1_w = B_1_w.T
+        y_2_v1, B_1_f, D_1_f = diff_equation(1, nodes, alpha)
+        y_2_v2, B_2_f, D_2_f = diff_equation(2, nodes, alpha)
         
+        eigvals_1, _ = np.linalg.eig(B_1_f - D_1_f)
+        eig_val_v1.append(np.max(eigvals_1))
+        t_val.append(t_start)
+
+        avg_val = find_avg(nodes, n, 1)
+        avg_val_list_v1.append(avg_val)
+        sr_vals_v1.append(find_avg(nodes[:n], m, 1))
+
+        eigvals_2, _ = np.linalg.eig(B_2_f - D_2_f)
+        eig_val_v2.append(np.max(eigvals_2))
+
+        avg_val = find_avg(nodes, n, 2)
+        avg_val_list_v2.append(avg_val)
+        sr_vals_v2.append(find_avg(nodes[:n], m, 2))
 
         #update the position of all the nodes, and then plot them in a animation
         for i in range(len(nodes)):
@@ -156,9 +230,35 @@ if __name__ == "__main__":
             this_node.update_position(dx, dy)
             #if node comes in contact with bound, phi -> -phi
             this_node.check_boundary_cross(center, length)
-
+            #update node value
+            this_node.v_1 = y_2_v1[i, 0]
+            this_node.v_2 = y_2_v2[i, 0]
 
         #update the time 
         t_start = t_start + delta_t
         anim.update(nodes)
         plt.pause(0.01)  # Pause to see each update
+
+
+
+plt.show()  # Display the final animation
+
+plt.plot(t_val, eig_val_v1, color = "blue", label = "v1")
+plt.plot(t_val, eig_val_v2, color = "red", label = "v2")
+plt.title("Max eig value")
+plt.xlabel('t')
+plt.ylabel('eig')
+plt.legend()
+plt.show()
+
+
+
+plt.plot(t_val, avg_val_list_v2, color = "blue", label = "node v2")
+plt.plot(t_val, sr_vals_v2, color = "red", label = "shared resource v2")
+plt.plot(t_val, avg_val_list_v1, color = "green", label = "node v1")
+plt.plot(t_val, sr_vals_v1, color = "black", label = "shared resource v1")
+plt.title("Average Infection over Time")
+plt.xlabel('t')
+plt.ylabel('infection')
+plt.legend()
+plt.show()
