@@ -158,24 +158,24 @@ if __name__ == "__main__":
     m = 2 # number of resource nodes 
     alpha = 0.1 # rate of infection from rnode to rnode
     beta_1 = 1 # infection rate virus 1
-    delta_1 = 3 # recovery rate 1
-    beta_2 = 1.5 # infection rate virus 2
-    delta_2 = 3 # recovery rate 2 
+    delta_1 = 0.5 # recovery rate 1
+    beta_2 = 1 # infection rate virus 2
+    delta_2 = 0.5 # recovery rate 2 
     # v_1_init = 0.5 
     # v_2_init = 0.5
-    r_to_n_infection_rate_1 = 0.2
-    r_to_n_infection_rate_2 = 0.3
+    r_to_n_infection_rate_1 = alpha
+    r_to_n_infection_rate_2 = alpha
     scaling = 5
-    bad_guys_1 = [0, 2]
-    bad_guys_2 = [3, 5]
+    bad_guys_1 = [0, 2, 6]
+    bad_guys_2 = [1, 3, 5]
     nodes = []
     for i in range(n + m):
         v_1_init = 0
         v_2_init = 0
         if(i in bad_guys_1):
-            v_1_init = 0.5
+            v_1_init = 0.1
         elif(i in bad_guys_2):
-            v_2_init = 0.5
+            v_2_init = 0.1
         else:
             pass 
 
@@ -204,6 +204,13 @@ if __name__ == "__main__":
     t_val = []
         #for each time step:
     while t_start < sim_time:
+        #beta's are time varying: (infection rate)
+        beta_1_new = 1 + np.sin(t_start / 100)
+        beta_2_new =.8 + np.sin(t_start / 100)
+        for l in range(n):
+            this_node = nodes[l]
+            this_node.beta_1 = beta_1_new
+            this_node.beta_2 = beta_2_new
         #for each timestep solve the differential equation
         y_2_v1, B_1_f, D_1_f = diff_equation(1, nodes, alpha)
         y_2_v2, B_2_f, D_2_f = diff_equation(2, nodes, alpha)
@@ -243,22 +250,28 @@ if __name__ == "__main__":
 
 plt.show()  # Display the final animation
 
-plt.plot(t_val, eig_val_v1, color = "blue", label = "v1")
-plt.plot(t_val, eig_val_v2, color = "red", label = "v2")
-plt.title("Max eig value")
-plt.xlabel('t')
-plt.ylabel('eig')
-plt.legend()
-plt.show()
 
+# Create a figure with two subplots (vertically stacked)
+fig, axs = plt.subplots(2, 1, figsize=(10, 8))  # 2 rows, 1 column
 
+# First plot: Max eig value
+axs[0].plot(t_val, eig_val_v1, color="blue", label="v1")
+axs[0].plot(t_val, eig_val_v2, color="red", label="v2")
+axs[0].set_title("Max eig value")
+axs[0].set_xlabel('t')
+axs[0].set_ylabel('eig')
+axs[0].legend()
 
-plt.plot(t_val, avg_val_list_v2, color = "blue", label = "node v2")
-plt.plot(t_val, sr_vals_v2, color = "red", label = "shared resource v2")
-plt.plot(t_val, avg_val_list_v1, color = "green", label = "node v1")
-plt.plot(t_val, sr_vals_v1, color = "black", label = "shared resource v1")
-plt.title("Average Infection over Time")
-plt.xlabel('t')
-plt.ylabel('infection')
-plt.legend()
+# Second plot: Average Infection over Time
+axs[1].plot(t_val, avg_val_list_v2, color="blue", label="node v2")
+axs[1].plot(t_val, sr_vals_v2, color="red", label="shared resource v2")
+axs[1].plot(t_val, avg_val_list_v1, color="green", label="node v1")
+axs[1].plot(t_val, sr_vals_v1, color="black", label="shared resource v1")
+axs[1].set_title("Average Infection over Time")
+axs[1].set_xlabel('t')
+axs[1].set_ylabel('infection')
+axs[1].legend()
+
+# Adjust layout to avoid overlap
+plt.tight_layout()
 plt.show()

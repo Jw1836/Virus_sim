@@ -20,7 +20,7 @@ class ResourceNode:
         self.delta_2_w = delta_2_w
         self.v_1 = v_1_init
         self.v_2 = v_2_init
-        self.color = 'green'
+        #self.color = 'green'
         self.position = (x, y)
         self.x_vel = 0
         self.y_vel = 0
@@ -61,7 +61,7 @@ class PopulationNode:
         self.delta_2 = recovery_rate_2
         self.v_1 = v_1_init
         self.v_2 = v_2_init
-        self.color = "red" if v_1_init > 0 or v_2_init > 0 else "blue"
+        #self.color = "blue"
         self.position = (x, y)
         self.x_vel = random.gauss(0, 1) * 0.5
         self.y_vel = random.gauss(0, 1) * 0.5
@@ -128,6 +128,17 @@ class Animation:
         
         # Add the square to the plot
         self.ax.add_patch(square)
+                # Define legend items for color meanings
+        legend_elements = [
+            mpatches.Patch(color='blue', label='v₁ < 0.5'),
+            mpatches.Patch(color='green', label='v₂ < 0.5'),
+            mpatches.Patch(color='red', label='v₁ ≥ 0.5'),
+            mpatches.Patch(color='orange', label='v₂ ≥ 0.5')
+        ]
+
+        # Add legend to the axis
+        self.ax.legend(handles=legend_elements, loc='upper right', fontsize=8, frameon=True)
+
 
     def update(self, node_list):
         """
@@ -142,7 +153,18 @@ class Animation:
             # For each node in the list, create a patch (circle for the node)
             for node in self.node_list:
                 x, y = node.position  # Get the current position of the node
-                circle = mpatches.Circle((x, y), radius=0.1, color=node.color, lw=1)
+                if(node.v_1 < 0.5):
+                    node.color = "blue"
+                elif(node.v_2 < 0.5):
+                    node.color = "green"
+                elif(node.v_2 >= 0.5):
+                    node.color = "orange"
+                elif(node.v_1 >= 0.5):
+                    node.color = "red"
+                else:
+                    node.color = "black"
+                
+                circle = mpatches.Circle((x, y), radius=0.1, color= node.color, lw=1)
                 self.ax.add_patch(circle)  # Add the circle to the axes
                 self.handle.append(circle)  # Store the handle for future updates
                             # Add text label for v_1 and v_2
@@ -155,8 +177,17 @@ class Animation:
             # Update the position of each node in the list
             for i, node in enumerate(self.node_list):
                 x, y = node.position  # Get the updated position
+                
+                if((node.v_1 < 0.5) and (node.v_2 < 0.5)):
+                    node.color = "blue"
+                elif(node.v_2 >= 0.5):
+                    node.color = "pink"
+                elif(node.v_1 >= 0.5):
+                    node.color = "red"
+                else:
+                    node.color = "black"
                 self.handle[i].center = (x, y)  # Update the position of the circle (node)
-
+                self.handle[i].set_color(node.color)
                 # Update text position and values
                 self.texts[i].set_position((x + 0.3, y + 0.3))
                 self.texts[i].set_text(f"v₁={node.v_1:.2f}\nv₂={node.v_2:.2f}")
