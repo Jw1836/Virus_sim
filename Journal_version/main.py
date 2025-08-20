@@ -5,6 +5,8 @@ import random
 import numpy as np 
 import matplotlib.pyplot as plt
 import sys
+
+#helper functions start here
 def get_B_k_w(n, nodes, k):
     m = len(nodes) - n
     B_k = np.zeros((n,m))
