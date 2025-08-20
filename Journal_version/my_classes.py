@@ -11,11 +11,9 @@ matplotlib.use('tkagg')  # for GUI-based animation
 # ---------------------------
 
 class ResourceNode:
-    def __init__(self, x, y, r_to_n_infection_rate_1, r_to_n_infection_rate_2, v_1_init, v_2_init, delta_1_w, delta_2_w):
+    def __init__(self, x, y, v_1_init, v_2_init, delta_1_w, delta_2_w):
         self.x_pos = x
         self.y_pos = y
-        self.r_to_n_infection_rate_1 = r_to_n_infection_rate_1
-        self.r_to_n_infection_rate_2 = r_to_n_infection_rate_2
         self.delta_1_w = delta_1_w
         self.delta_2_w = delta_2_w
         self.v_1 = v_1_init
@@ -150,9 +148,9 @@ class Animation:
         
         # On the first update (when FlagInit is True), create the nodes and path
         if self.FlagInit:
-            # For each node in the list, create a patch (circle for the node)
             for node in self.node_list:
                 x, y = node.position  # Get the current position of the node
+                # Color logic (unchanged)
                 if(node.v_1 < 0.5):
                     node.color = "blue"
                 elif(node.v_2 < 0.5):
@@ -164,20 +162,21 @@ class Animation:
                 else:
                     node.color = "black"
                 
-                circle = mpatches.Circle((x, y), radius=0.1, color= node.color, lw=1)
-                self.ax.add_patch(circle)  # Add the circle to the axes
-                self.handle.append(circle)  # Store the handle for future updates
-                            # Add text label for v_1 and v_2
+                # Draw shape based on node type
+                if isinstance(node, ResourceNode):
+                    shape = mpatches.Rectangle((x-0.1, y-0.1), 0.2, 0.2, color=node.color, lw=1)
+                else:  # PopulationNode
+                    shape = mpatches.Circle((x, y), radius=0.1, color=node.color, lw=1)
+                self.ax.add_patch(shape)
+                self.handle.append(shape)
                 txt = self.ax.text(x + 0.3, y + 0.3, f"v₁={node.v_1:.2f}\nv₂={node.v_2:.2f}",
-                                   fontsize=7, color='black', ha='left')
+                                fontsize=7, color='black', ha='left')
                 self.texts.append(txt)
-            self.FlagInit = False  # Set flag to False so this block doesn't run again
-        
+            self.FlagInit = False
         else:
-            # Update the position of each node in the list
             for i, node in enumerate(self.node_list):
-                x, y = node.position  # Get the updated position
-                
+                x, y = node.position
+                # Color logic (unchanged)
                 if((node.v_1 < 0.5) and (node.v_2 < 0.5)):
                     node.color = "blue"
                 elif(node.v_2 >= 0.5):
@@ -186,11 +185,13 @@ class Animation:
                     node.color = "red"
                 else:
                     node.color = "black"
-                self.handle[i].center = (x, y)  # Update the position of the circle (node)
+                # Update shape position and color
+                if isinstance(node, ResourceNode):
+                    self.handle[i].set_xy((x-0.1, y-0.1))
+                else:
+                    self.handle[i].center = (x, y)
                 self.handle[i].set_color(node.color)
-                # Update text position and values
                 self.texts[i].set_position((x + 0.3, y + 0.3))
                 self.texts[i].set_text(f"v₁={node.v_1:.2f}\nv₂={node.v_2:.2f}")
-        
         # Redraw the plot with the updated nodes
         plt.draw()
