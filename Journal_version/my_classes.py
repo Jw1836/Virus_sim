@@ -50,12 +50,12 @@ class ResourceNode:
 
 
 class PopulationNode:
-    def __init__(self, x, y, infection_rate_1, recovery_rate_1, infection_rate_2, recovery_rate_2, v_1_init, v_2_init):
+    def __init__(self, x, y, recovery_rate_1, recovery_rate_2, v_1_init, v_2_init):
         self.x_pos = x
         self.y_pos = y
-        self.beta_1 = infection_rate_1
+        self.beta_1 = None #done in the while loop
         self.delta_1 = recovery_rate_1
-        self.beta_2 = infection_rate_2
+        self.beta_2 = None #done in the while loop
         self.delta_2 = recovery_rate_2
         self.v_1 = v_1_init
         self.v_2 = v_2_init
@@ -63,6 +63,8 @@ class PopulationNode:
         self.position = (x, y)
         self.x_vel = random.gauss(0, 1) * 0.5
         self.y_vel = random.gauss(0, 1) * 0.5
+        self.x_vel = 0
+        self.y_vel = 0
 
     def update_position(self, dx, dy):
         self.x_pos += dx
@@ -100,7 +102,7 @@ class Animation:
         self.node_list = []
         self.center = (2.5, 2.5)
         # Create figure and axis
-        self.fig, self.ax = plt.subplots()
+        #self.fig, self.ax = plt.subplots()
         
         # Handle list to store the patches and line objects
         self.handle = []
@@ -194,4 +196,4 @@ class Animation:
                 self.texts[i].set_position((x + 0.3, y + 0.3))
                 self.texts[i].set_text(f"v₁={node.v_1:.2f}\nv₂={node.v_2:.2f}")
         # Redraw the plot with the updated nodes
-        plt.draw()
+        #plt.draw()
