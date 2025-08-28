@@ -153,3 +153,4 @@ class Animation:
 #     plt.pause(0.5)  # Pause to see each update
 
 # plt.show()  # Display the final animation
+

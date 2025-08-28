@@ -1,6 +1,7 @@
 from my_classes import PopulationNode
 from my_classes import ResourceNode
 from my_classes import Animation
+from my_classes import PhasePlotAnimation
 import random
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -150,6 +151,9 @@ def get_x_vec(nodes, k, n):
 
 def find_avg(node_list, n, k):
     sum = 0
+    if(n == 0):
+        return 0
+    
     for i in range(n):
         this_node = node_list[i]
         if(k == 1):
@@ -160,7 +164,7 @@ def find_avg(node_list, n, k):
         sum = sum + concentration
     return sum / n
 
-def diff_equation(k, nodes):
+def diff_equation(k, nodes, m):
         A = get_adj_matrix(nodes, n, r=10)
         # k = 1
         x_k_vec = get_x_vec(nodes, k, n)
@@ -173,7 +177,10 @@ def diff_equation(k, nodes):
         B_k_w = get_B_k_w(n, nodes, k)
         C_k_w = B_k_w.T #for homogenous case
         delta_k = nodes[0].delta_1 if k == 1 else nodes[0].delta_2
-        delta_k_w = nodes[-1].delta_1_w if k == 1 else nodes[-1].delta_2_w
+        #delta_k_w = nodes[-1].delta_1_w if k == 1 else nodes[-1].delta_2_w
+        delta_k_w = 0
+        if m > 0:
+            delta_k_w = nodes[-1].delta_1_w if k == 1 else nodes[-1].delta_2_w
         D_k = np.eye(n) * delta_k
         D_k_w = np.eye(m) * delta_k_w
         A_k_w =  get_A_k_w(k, nodes, n)
@@ -203,20 +210,24 @@ def diff_equation(k, nodes):
         ])
 
         y_k_2 = ((-1 * D_k_f + (np.eye(n + m) - (X_y_1 + X_y_2)) @ B_k_f) @ y_k_1) * delta_t + y_k_1
-        MATRIX = (-1 * D_k_f + (np.eye(n + m) - (X_y_1 + X_y_2)) @ B_k_f)
-        return y_k_2, B_k_f, D_k_f
+        A_MATRIX = (-1 * D_k_f + (np.eye(n + m) - (X_y_1 + X_y_2)) @ B_k_f)
+        return y_k_2, B_k_f, D_k_f, A_MATRIX
 
 if __name__ == "__main__":
-    n = 7 # number of population nodes
-    m = 2 # number of resource nodes
+    # n = 7 # number of population nodes
+    # m = 2 # number of resource nodes
+    n = 2
+    m = 0
     #alpha = 0.1 # rate of infection from rnode to rnode
     delta_1 = 0.21 # recovery rate 1 # make this 2 or 3 to have exponential decay of virus levels
     delta_2 = 0.4 # recovery rate 2 
     # v_1_init = 0.5 
     # v_2_init = 0.5
     scaling = 5
-    bad_guys_1 = [0, 2, 8]
-    bad_guys_2 = [1, 3, 5, 7]
+    # bad_guys_1 = [0, 2, 8]
+    # bad_guys_2 = [1, 3, 5, 7]
+    bad_guys_1 = [0]
+    bad_guys_2 = [1]
     nodes = []
     for i in range(n + m):
         v_1_init = 0
@@ -240,7 +251,7 @@ if __name__ == "__main__":
     # Create and run animation
     #anim = Animation()
     t_start = 0
-    sim_time = 2000
+    sim_time =  100 #2000
     delta_t = 0.04
     length = 5
     center = 2.5
@@ -251,8 +262,22 @@ if __name__ == "__main__":
     eig_val_v2 = []
     sr_vals_v2 = []
     t_val = []
+
+    ##### PHase Plot Stuff####
+
         #for each time step:
     exit_loop = False
+    # initial_conditions = [
+    #             [0, 0], [0, .25], [0, 0.5], [0, 0.75], [0, .9],
+    #             [0.25, 0], [0.25, .25], [0.25, 0.5], [0.25, 0.75], [0.25, .9],
+    #             [0.5, 0], [0.5, .25], [0.5, 0.5], [0.5, 0.75], [0.5, .9],
+    #             [0.75, 0], [0.75, .25], [0.75, 0.5], [0.75, 0.75], [0.75, .9]
+    #         ]
+    num_partitions = 10
+    vals = np.linspace(0, 1, num_partitions)
+    initial_conditions = [[x, y] for x in vals for y in vals]
+    phase_anim = PhasePlotAnimation(initial_conditions)
+
     while t_start < sim_time:
         # print("virus")
         # for i in range(len(nodes)):
@@ -260,7 +285,7 @@ if __name__ == "__main__":
         #beta's are time varying: (infection rate for population nodes)
         scaling = 0.5
         beta_1_offset = 0.5
-        beta_2_offset = 1.0
+        beta_2_offset = 0.6
         beta_1_new = beta_1_offset + scaling * np.sin(t_start / 10)
         beta_2_new = beta_2_offset + np.sin(t_start / 10)
         for l in range(n):
@@ -268,8 +293,8 @@ if __name__ == "__main__":
             this_node.beta_1 = beta_1_new
             this_node.beta_2 = beta_2_new
         #for each timestep solve the differential equation
-        y_2_v1, B_1_f, D_1_f = diff_equation(1, nodes)
-        y_2_v2, B_2_f, D_2_f = diff_equation(2, nodes)
+        y_2_v1, B_1_f, D_1_f, A_MATRIX_1 = diff_equation(1, nodes, m)
+        y_2_v2, B_2_f, D_2_f, A_MATRIX_2 = diff_equation(2, nodes, m)
 
         #if any of the nodes are getting too large(v_1, v_2) exit the while loop to show results
         for i in range(len(nodes)):
@@ -296,6 +321,9 @@ if __name__ == "__main__":
         avg_val_list_v2.append(avg_val)
         sr_vals_v2.append(find_avg(nodes[:n], m, 2))
 
+
+       
+
         #update the position of all the nodes, and then plot them in a animation
         for i in range(len(nodes)):
             this_node = nodes[i]
@@ -308,13 +336,20 @@ if __name__ == "__main__":
             this_node.v_2 = y_2_v2[i, 0]
 
         #update the time 
+        #t_start = t_start + delta_t
+        A_matrix_1 = A_MATRIX_1
+        A_matrix_2 = A_MATRIX_2
+        phase_anim.update(A_matrix_1, A_matrix_2, t_start)
+        
+        #update the time 
         t_start = t_start + delta_t
+        #plt.show()
         #anim.update(nodes)
-        #plt.pause(0.01)  # Pause to see each update
+        plt.pause(0.01)  # Pause to see each update
 
 
 
-#plt.show()  # Display the final animation
+plt.show()  # Display the final animation
 
 
 # Create a figure with two subplots (vertically stacked)
