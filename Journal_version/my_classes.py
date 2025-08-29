@@ -196,4 +196,4 @@ class Animation:
                 self.texts[i].set_position((x + 0.3, y + 0.3))
                 self.texts[i].set_text(f"v₁={node.v_1:.2f}\nv₂={node.v_2:.2f}")
         # Redraw the plot with the updated nodes
-        plt.draw()
+        #plt.draw()
