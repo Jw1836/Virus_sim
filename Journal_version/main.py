@@ -227,8 +227,13 @@ if __name__ == "__main__":
     # Create and run animation
     # anim = Animation()
     t_start = 0
+<<<<<<< HEAD
     sim_time =  1000 #2000
     delta_t = .05
+=======
+    sim_time = 2000
+    delta_t = 0.04
+>>>>>>> parent of 834bbca (PHASE PLOTS)
     length = 5
     center = 2.5
     avg_val_list_v1 = []
@@ -247,7 +252,11 @@ if __name__ == "__main__":
         #beta's are time varying: (infection rate for population nodes)
         scaling = 0.5
         beta_1_offset = 0.5
+<<<<<<< HEAD
         beta_2_offset = 1
+=======
+        beta_2_offset = 1.0
+>>>>>>> parent of 834bbca (PHASE PLOTS)
         beta_1_new = beta_1_offset + scaling * np.sin(t_start / 10)
         beta_2_new = beta_2_offset + np.sin(t_start / 10)
         for l in range(n):
@@ -301,8 +310,11 @@ if __name__ == "__main__":
 
 
 #plt.show()  # Display the final animation
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> parent of 834bbca (PHASE PLOTS)
 
 
 # Create a figure with two subplots (vertically stacked)
