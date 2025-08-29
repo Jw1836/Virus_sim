@@ -1,27 +1,24 @@
 from my_classes import PopulationNode
 from my_classes import ResourceNode
 from my_classes import Animation
-from my_classes import PhasePlotAnimation
 import random
 import numpy as np 
 import matplotlib.pyplot as plt
 import sys
 import math
 #helper functions start here
-def calculate_alpha_jl(j, l, nodes, n, k): #resource j to resource l infection rate
+def calculate_alpha_jl(j, l, nodes, n): #resource j to resource l infection rate
     pos_j = np.array(nodes[n + j].position)
     pos_l = np.array(nodes[n + l].position)
     d = np.linalg.norm(pos_j - pos_l)
-    scaling = 1
-    scaling = nodes[n + l].v_1 if k == 1 else nodes[n + l].v_2
     if d < 10:
-        return np.exp(-d**2) * scaling
+        return np.exp(-d**2)
     else:
         return 0
-def sum_alpha_k(p, q, n, k):
+def sum_alpha_k(p, q, n):
     sum = 0
     for i in range(q):
-        sum = sum + calculate_alpha_jl(p, i, nodes, n, k)
+        sum = sum + calculate_alpha_jl(p, i, nodes, n)
     return sum
 
 def get_A_k_w(k, nodes, n):
@@ -29,7 +26,7 @@ def get_A_k_w(k, nodes, n):
     A_k_w = np.zeros((q, q))
     for i in range(q):
         for j in range(q):
-            A_k_w[i, j] = calculate_alpha_jl(i, j, nodes, n, k) - sum_alpha_k(i, q, n, k)
+            A_k_w[i, j] = calculate_alpha_jl(i, j, nodes, n) - sum_alpha_k(i, q, n)
     return A_k_w
 
 def calculate_bet_awk_ij(i, j, nodes, k, n, r=10):
@@ -41,15 +38,7 @@ def calculate_bet_awk_ij(i, j, nodes, k, n, r=10):
         weight = np.exp(-d**2)
     else:
         weight = 0
-
-    infection_rate = 1
-    infection_rate = nodes[n + j].v_1 if k == 1 else nodes[n + j].v_2
-    #there is no resource node infection rate?
-    # if(k == 1):
-    #     infection_rate = nodes[n + j].v_1
-    # elif(k == 2):
-    #     infection_rate = nodes[n + j].v_2
-    return weight * infection_rate
+    return weight
 
 def get_B_k_w(n, nodes, k):
     m = len(nodes) - n
@@ -62,7 +51,6 @@ def get_B_k_w(n, nodes, k):
                 w_j = nodes[n + j].v_2
 
             beta_wk_ij = calculate_bet_awk_ij(i, j, nodes, k, n)
-            #print(w_j)
             val = beta_wk_ij * w_j
             #print(beta_wk_ij, w_j, val)
             if(math.isnan(val) == True or math.isnan(w_j) == True):
@@ -70,7 +58,6 @@ def get_B_k_w(n, nodes, k):
 
             B_k_w[i, j] = val
 
-    #print(B_k_w)
     return B_k_w
                 
 def get_B_k(A, n, nodes, k):
@@ -87,7 +74,6 @@ def get_B_k(A, n, nodes, k):
                 sys.exit()
 
             B_k[i, j] = val
-    #print(B_k)
     return B_k
                 
 
@@ -210,8 +196,7 @@ def diff_equation(k, nodes, m):
         ])
 
         y_k_2 = ((-1 * D_k_f + (np.eye(n + m) - (X_y_1 + X_y_2)) @ B_k_f) @ y_k_1) * delta_t + y_k_1
-        A_MATRIX = (-1 * D_k_f + (np.eye(n + m) - (X_y_1 + X_y_2)) @ B_k_f)
-        return y_k_2, B_k_f, D_k_f, A_MATRIX
+        return y_k_2, B_k_f, D_k_f
 
 if __name__ == "__main__":
     n = 7 # number of population nodes
@@ -219,37 +204,38 @@ if __name__ == "__main__":
     # n = 2
     # m = 0
     #alpha = 0.1 # rate of infection from rnode to rnode
-    delta_1 = 0.4 # recovery rate 1 # make this 2 or 3 to have exponential decay of virus levels
-    delta_2 = 0.2 # recovery rate 2 
+    delta_1 = .1 # recovery rate 1
+    delta_2 = .2 # recovery rate 2 
+    beta_1 = 1
+    beta_2 = 1
     # v_1_init = 0.5 
     # v_2_init = 0.5
     scaling = 5
-    # bad_guys_1 = [0, 2, 8]
-    # bad_guys_2 = [1, 3, 5, 7]
-    bad_guys_1 = [0]
-    bad_guys_2 = [1]
+    bad_guys_1 = [0, 2, 8]
+    bad_guys_2 = [1, 3, 5, 7]
+    # bad_guys_1 = [0]
+    # bad_guys_2 = [1]
     nodes = []
     for i in range(n + m):
         v_1_init = 0
         v_2_init = 0
         if(i in bad_guys_1):
-            v_1_init = 0.5
+            v_1_init = 0.25
         elif(i in bad_guys_2):
             v_2_init = 0.25
         else:
             pass 
 
         x_pos = random.random() * scaling
-        y_pos = x_pos #random.random() * scaling    
-
+        y_pos = random.random() * scaling    
 
         if(i < n):
-            nodes.append(PopulationNode(x_pos, y_pos, delta_1, delta_2, v_1_init, v_2_init))
+            nodes.append(PopulationNode(x_pos, y_pos, beta_1, delta_1, beta_2, delta_2, v_1_init, v_2_init))
         else:
             nodes.append(ResourceNode(x_pos, y_pos, v_1_init, v_2_init, delta_1, delta_2))
 
     # Create and run animation
-    #anim = Animation()
+    # anim = Animation()
     t_start = 0
     sim_time =  1000 #2000
     delta_t = .05
@@ -284,8 +270,8 @@ if __name__ == "__main__":
         #     print(nodes[i].v_1, nodes[i].v_2)
         #beta's are time varying: (infection rate for population nodes)
         scaling = 0.5
-        beta_1_offset = 1
-        beta_2_offset = 2
+        beta_1_offset = .5
+        beta_2_offset = 1
         beta_1_new = beta_1_offset + scaling * np.sin(t_start / 10)
         beta_2_new = beta_2_offset + np.sin(t_start / 10)
         for l in range(n):
@@ -293,19 +279,11 @@ if __name__ == "__main__":
             this_node.beta_1 = beta_1_new
             this_node.beta_2 = beta_2_new
         #for each timestep solve the differential equation
-        y_2_v1, B_1_f, D_1_f, A_MATRIX_1 = diff_equation(1, nodes, m)
-        y_2_v2, B_2_f, D_2_f, A_MATRIX_2 = diff_equation(2, nodes, m)
-
-        #if any of the nodes are getting too large(v_1, v_2) exit the while loop to show results
-        for i in range(len(nodes)):
-            if nodes[i].v_1 > 100 or nodes[i].v_2 > 100:
-                print("Node", i, "exceeded limits:", nodes[i].v_1, nodes[i].v_2)
-                exit_loop = True
-                break
+        y_2_v1, B_1_f, D_1_f = diff_equation(1, nodes, m)
+        y_2_v2, B_2_f, D_2_f = diff_equation(2, nodes, m)
         #print(B_2_f)
-        if exit_loop:
-            break
 
+        
         eigvals_1, _ = np.linalg.eig(B_1_f - D_1_f)
         eig_val_v1.append(np.max(eigvals_1))
         t_val.append(t_start)
@@ -337,8 +315,8 @@ if __name__ == "__main__":
 
         #update the time 
         #t_start = t_start + delta_t
-        A_matrix_1 = A_MATRIX_1
-        A_matrix_2 = A_MATRIX_2
+        # A_matrix_1 = A_MATRIX_1
+        # A_matrix_2 = A_MATRIX_2
         #phase_anim.update(A_matrix_1, A_matrix_2, t_start)
         #phase_anim.compute_frame(A_matrix_1, A_matrix_2, t_start)
         #update the time 
@@ -351,46 +329,6 @@ if __name__ == "__main__":
 
 #plt.show()  # Display the final animation
 
-#############################################################################
-from matplotlib.animation import FuncAnimation, PillowWriter
-
-def save_phase_plot_gif(phase_anim, filename):
-    fig, ax = plt.subplots()
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-
-    quivers = []
-
-    def init():
-        return quivers
-
-    def update(frame_data):
-        nonlocal quivers
-        t, arrows = frame_data
-
-        # Remove old quivers
-        for q in quivers:
-            q.remove()
-        quivers = []
-
-        for x, y, dx1, dy1, dx2, dy2 in arrows:
-            q1 = ax.quiver(x, y, dx1, dy1, color='blue', angles='xy', scale_units='xy', scale=1)
-            q2 = ax.quiver(x, y, dx2, dy2, color='red', angles='xy', scale_units='xy', scale=1)
-            quivers.extend([q1, q2])
-
-        ax.set_title(f"Phase Plot at t = {t:.2f}")
-        return quivers
-
-    ani = FuncAnimation(fig, update, frames=phase_anim.frames, init_func=init, blit=False)
-
-    writer = PillowWriter(fps=10)
-    ani.save(filename, writer=writer)
-    print(f"Saved phase plot animation as: {filename}")
-
-# Usage:
-# save_phase_plot_gif(phase_anim, "phase_plot.gif")
-######################################################
-
 
 
 
@@ -398,21 +336,21 @@ def save_phase_plot_gif(phase_anim, filename):
 fig, axs = plt.subplots(2, 1, figsize=(10, 8))  # 2 rows, 1 column
 
 # First plot: Max eig value
-axs[0].plot(t_val, eig_val_v1, color="blue", label="Virus 1")
-axs[0].plot(t_val, eig_val_v2, color="red", label="Virus 2")
-axs[0].set_title("Max Eigenvalue")
+axs[0].plot(t_val, eig_val_v1, color="blue", label="v1")
+axs[0].plot(t_val, eig_val_v2, color="red", label="v2")
+axs[0].set_title("Max eig value")
 axs[0].set_xlabel('t')
-#axs[0].set_ylabel('eig')
+axs[0].set_ylabel('eig')
 axs[0].legend()
 
 # Second plot: Average Infection over Time
-axs[1].plot(t_val, avg_val_list_v2, color="red", label="Virus 2 - Population")
-axs[1].plot(t_val, sr_vals_v2, color="black", label="Virus 2 - Shared Resource")
-axs[1].plot(t_val, avg_val_list_v1, color="blue", label="Virus 1 - Population")
-axs[1].plot(t_val, sr_vals_v1, color="green", label="Virus 1 - Shared Resource")
+axs[1].plot(t_val, avg_val_list_v2, color="blue", label="node v2")
+axs[1].plot(t_val, sr_vals_v2, color="red", label="shared resource v2")
+axs[1].plot(t_val, avg_val_list_v1, color="green", label="node v1")
+axs[1].plot(t_val, sr_vals_v1, color="black", label="shared resource v1")
 axs[1].set_title("Average Infection over Time")
 axs[1].set_xlabel('t')
-axs[1].set_ylabel('Infection')
+axs[1].set_ylabel('infection')
 axs[1].legend()
 
 # Adjust layout to avoid overlap

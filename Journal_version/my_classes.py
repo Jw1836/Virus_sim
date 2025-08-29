@@ -50,19 +50,19 @@ class ResourceNode:
 
 
 class PopulationNode:
-    def __init__(self, x, y, recovery_rate_1, recovery_rate_2, v_1_init, v_2_init):
+    def __init__(self, x, y, infection_rate_1, recovery_rate_1, infection_rate_2, recovery_rate_2, v_1_init, v_2_init):
         self.x_pos = x
         self.y_pos = y
-        self.beta_1 = None #done in the while loop
+        self.beta_1 = infection_rate_1
         self.delta_1 = recovery_rate_1
-        self.beta_2 = None #done in the while loop
+        self.beta_2 = infection_rate_2
         self.delta_2 = recovery_rate_2
         self.v_1 = v_1_init
         self.v_2 = v_2_init
         #self.color = "blue"
         self.position = (x, y)
-        self.x_vel = random.gauss(0, 1) * 0.5
-        self.y_vel = random.gauss(0, 1) * 0.5
+        # self.x_vel = random.gauss(0, 1) * 0.5
+        # self.y_vel = random.gauss(0, 1) * 0.5
         self.x_vel = 0
         self.y_vel = 0
 
@@ -102,7 +102,7 @@ class Animation:
         self.node_list = []
         self.center = (2.5, 2.5)
         # Create figure and axis
-        #self.fig, self.ax = plt.subplots()
+        self.fig, self.ax = plt.subplots()
         
         # Handle list to store the patches and line objects
         self.handle = []
@@ -196,66 +196,4 @@ class Animation:
                 self.texts[i].set_position((x + 0.3, y + 0.3))
                 self.texts[i].set_text(f"v₁={node.v_1:.2f}\nv₂={node.v_2:.2f}")
         # Redraw the plot with the updated nodes
-        #plt.draw()
-
-
-
-
-# class PhasePlotAnimation:
-#     def __init__(self, initial_conditions):
-#         self.initial_conditions = initial_conditions
-#         self.fig, self.ax = plt.subplots()
-#         self.ax.set_xlim(0, 1)
-#         self.ax.set_ylim(0, 1)
-#         self.quiver_handles = []
-#         self.FlagInit = True
-
-#     def update(self, A_matrix_1, A_matrix_2, t_start):
-#         """
-#         y_init_list: list of initial condition vectors (each is shape (2,))
-#         A_matrix_1, A_matrix_2: matrices to multiply (each is shape (2,2))
-#         t: current time (optional, for title)
-#         """
-#         # Remove previous quivers
-#         y_init_list = self.initial_conditions
-#         for handle in self.quiver_handles:
-#             handle.remove()
-#         self.quiver_handles = []
-
-#         for y_init in y_init_list:
-#             y_dot_1 = A_matrix_1 @ y_init
-#             y_dot_2 = A_matrix_2 @ y_init
-#             # Plot y_dot_1 (blue arrow)
-#             q1 = self.ax.quiver(y_init[0], y_init[1], y_dot_1[0], y_dot_1[1], color='blue', angles='xy', scale_units='xy', scale=1, label='y_dot_1')
-#             # Plot y_dot_2 (red arrow)
-#             q2 = self.ax.quiver(y_init[0], y_init[1], y_dot_2[0], y_dot_2[1], color='red', angles='xy', scale_units='xy', scale=1, label='y_dot_2')
-#             self.quiver_handles.extend([q1, q2])
-
-
-#             self.ax.set_title(f"Phase Plot at t = {t_start:.2f}")
-
-#         #plt.draw()
-
-
-
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
-class PhasePlotAnimation:
-    def __init__(self, initial_conditions):
-        self.initial_conditions = initial_conditions
-        self.fig, self.ax = plt.subplots()
-        self.ax.set_xlim(0, 1)
-        self.ax.set_ylim(0, 1)
-        self.frames = []  # store all the arrows for each frame
-
-    def compute_frame(self, A_matrix_1, A_matrix_2, t_start):
-        """Compute and return a list of arrow data for a frame."""
-        y_init_list = self.initial_conditions
-        arrows = []
-        for y_init in y_init_list:
-            y_dot_1 = A_matrix_1 @ y_init
-            y_dot_2 = A_matrix_2 @ y_init
-            arrows.append((y_init[0], y_init[1], y_dot_1[0], y_dot_1[1], y_dot_2[0], y_dot_2[1]))
-        self.frames.append((t_start, arrows))
-
+        plt.draw()
