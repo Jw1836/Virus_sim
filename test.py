@@ -1,37 +1,27 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.integrate import solve_ivp
+from moviepy.editor import VideoFileClip, concatenate_videoclips
 
-# Define A(t)
-def A(t):
-    return np.array([[0, 1],
-                     [-np.cos(t), -0.1]])
+gif_path = "/Users/jwayment/Code/Virus_sim/phase_plot.gif"
+output_video_path = "my_animation_video.mp4"
 
-# Define the system: dx/dt = A(t) x
-def system(t, x):
-    return np.array([[0, 0],
-                     [np.sin(t), 0]])
+try:
+    # Load the GIF as a video clip
+    clip = VideoFileClip(gif_path)
 
-# Time span and evaluation points
-t_span = (0, 20)
-t_eval = np.linspace(*t_span, 1000)
+    # Add a 2-second pause at the start (freeze first frame)
+    pause = clip.to_ImageClip(duration=2)
 
-# Initial conditions for phase portrait
-initial_conditions = [
-    [1, 0], [0, 1], [-1, 0], [0, -1], 
-    [1, 1], [-1, -1], [0.5, -0.5], [-0.5, 0.5]
-]
+    # Speed up the animation (e.g., 2x faster)
+    fast_clip = clip.fx(vfx.speedx, 2)
 
-# Plot phase portrait
-plt.figure(figsize=(8, 6))
-for x0 in initial_conditions:
-    sol = solve_ivp(system, t_span, x0, t_eval=t_eval)
-    plt.plot(sol.y[0], sol.y[1], label=f"x0={x0}")
+    # Concatenate pause and fast-forwarded animation
+    final_clip = concatenate_videoclips([pause, fast_clip])
 
-plt.xlabel('$x_1$')
-plt.ylabel('$x_2$')
-plt.title('Phase Portrait of $\\dot{x} = A(t)x$')
-plt.grid(True)
-plt.legend()
-plt.axis('equal')
-plt.show()
+    # Write the clip to a video file (e.g., MP4)
+    final_clip.write_videofile(output_video_path)
+
+    print(f"Successfully converted '{gif_path}' to '{output_video_path}' with pause and fast-forward.")
+
+except FileNotFoundError:
+    print(f"Error: GIF file not found at '{gif_path}'")
+except Exception as e:
+    print(f"An error occurred: {e}")

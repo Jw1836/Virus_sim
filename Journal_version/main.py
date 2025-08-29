@@ -214,13 +214,13 @@ def diff_equation(k, nodes, m):
         return y_k_2, B_k_f, D_k_f, A_MATRIX
 
 if __name__ == "__main__":
-    # n = 7 # number of population nodes
-    # m = 2 # number of resource nodes
-    n = 2
-    m = 0
+    n = 7 # number of population nodes
+    m = 2 # number of resource nodes
+    # n = 2
+    # m = 0
     #alpha = 0.1 # rate of infection from rnode to rnode
-    delta_1 = 0.21 # recovery rate 1 # make this 2 or 3 to have exponential decay of virus levels
-    delta_2 = 0.4 # recovery rate 2 
+    delta_1 = 0.4 # recovery rate 1 # make this 2 or 3 to have exponential decay of virus levels
+    delta_2 = 0.2 # recovery rate 2 
     # v_1_init = 0.5 
     # v_2_init = 0.5
     scaling = 5
@@ -251,8 +251,8 @@ if __name__ == "__main__":
     # Create and run animation
     #anim = Animation()
     t_start = 0
-    sim_time =  100 #2000
-    delta_t = 0.04
+    sim_time =  1000 #2000
+    delta_t = .05
     length = 5
     center = 2.5
     avg_val_list_v1 = []
@@ -273,10 +273,10 @@ if __name__ == "__main__":
     #             [0.5, 0], [0.5, .25], [0.5, 0.5], [0.5, 0.75], [0.5, .9],
     #             [0.75, 0], [0.75, .25], [0.75, 0.5], [0.75, 0.75], [0.75, .9]
     #         ]
-    num_partitions = 10
-    vals = np.linspace(0, 1, num_partitions)
-    initial_conditions = [[x, y] for x in vals for y in vals]
-    phase_anim = PhasePlotAnimation(initial_conditions)
+    # num_partitions = 10
+    # vals = np.linspace(0, 1, num_partitions)
+    # initial_conditions = [[x, y] for x in vals for y in vals]
+    # phase_anim = PhasePlotAnimation(initial_conditions)
 
     while t_start < sim_time:
         # print("virus")
@@ -284,8 +284,8 @@ if __name__ == "__main__":
         #     print(nodes[i].v_1, nodes[i].v_2)
         #beta's are time varying: (infection rate for population nodes)
         scaling = 0.5
-        beta_1_offset = 0.5
-        beta_2_offset = 0.6
+        beta_1_offset = 1
+        beta_2_offset = 2
         beta_1_new = beta_1_offset + scaling * np.sin(t_start / 10)
         beta_2_new = beta_2_offset + np.sin(t_start / 10)
         for l in range(n):
@@ -339,17 +339,59 @@ if __name__ == "__main__":
         #t_start = t_start + delta_t
         A_matrix_1 = A_MATRIX_1
         A_matrix_2 = A_MATRIX_2
-        phase_anim.update(A_matrix_1, A_matrix_2, t_start)
-        
+        #phase_anim.update(A_matrix_1, A_matrix_2, t_start)
+        #phase_anim.compute_frame(A_matrix_1, A_matrix_2, t_start)
         #update the time 
         t_start = t_start + delta_t
         #plt.show()
         #anim.update(nodes)
-        plt.pause(0.01)  # Pause to see each update
+        #plt.pause(0.01)  # Pause to see each update
 
 
 
-plt.show()  # Display the final animation
+#plt.show()  # Display the final animation
+
+#############################################################################
+from matplotlib.animation import FuncAnimation, PillowWriter
+
+def save_phase_plot_gif(phase_anim, filename):
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+
+    quivers = []
+
+    def init():
+        return quivers
+
+    def update(frame_data):
+        nonlocal quivers
+        t, arrows = frame_data
+
+        # Remove old quivers
+        for q in quivers:
+            q.remove()
+        quivers = []
+
+        for x, y, dx1, dy1, dx2, dy2 in arrows:
+            q1 = ax.quiver(x, y, dx1, dy1, color='blue', angles='xy', scale_units='xy', scale=1)
+            q2 = ax.quiver(x, y, dx2, dy2, color='red', angles='xy', scale_units='xy', scale=1)
+            quivers.extend([q1, q2])
+
+        ax.set_title(f"Phase Plot at t = {t:.2f}")
+        return quivers
+
+    ani = FuncAnimation(fig, update, frames=phase_anim.frames, init_func=init, blit=False)
+
+    writer = PillowWriter(fps=10)
+    ani.save(filename, writer=writer)
+    print(f"Saved phase plot animation as: {filename}")
+
+# Usage:
+# save_phase_plot_gif(phase_anim, "phase_plot.gif")
+######################################################
+
+
 
 
 # Create a figure with two subplots (vertically stacked)
@@ -375,6 +417,10 @@ axs[1].legend()
 
 # Adjust layout to avoid overlap
 plt.tight_layout()
-plt.show()
 f_string = f"delta_1{delta_1}, delta_2{delta_2}, scaling {scaling}, beta_1_offset {beta_1_offset}, beta_2_offset {beta_2_offset}"
-plt.savefig(f_string + ".png" )
+plt.savefig("./For_sebin_phil/" + f_string + ".png" )
+plt.show()
+
+# print(f"Saving phase plot as: {f_string}.png")
+# save_phase_plot_gif(phase_anim, "./Graphs_and_data/" + f_string + ".gif")
+# print("finished")

@@ -201,37 +201,61 @@ class Animation:
 
 
 
+# class PhasePlotAnimation:
+#     def __init__(self, initial_conditions):
+#         self.initial_conditions = initial_conditions
+#         self.fig, self.ax = plt.subplots()
+#         self.ax.set_xlim(0, 1)
+#         self.ax.set_ylim(0, 1)
+#         self.quiver_handles = []
+#         self.FlagInit = True
+
+#     def update(self, A_matrix_1, A_matrix_2, t_start):
+#         """
+#         y_init_list: list of initial condition vectors (each is shape (2,))
+#         A_matrix_1, A_matrix_2: matrices to multiply (each is shape (2,2))
+#         t: current time (optional, for title)
+#         """
+#         # Remove previous quivers
+#         y_init_list = self.initial_conditions
+#         for handle in self.quiver_handles:
+#             handle.remove()
+#         self.quiver_handles = []
+
+#         for y_init in y_init_list:
+#             y_dot_1 = A_matrix_1 @ y_init
+#             y_dot_2 = A_matrix_2 @ y_init
+#             # Plot y_dot_1 (blue arrow)
+#             q1 = self.ax.quiver(y_init[0], y_init[1], y_dot_1[0], y_dot_1[1], color='blue', angles='xy', scale_units='xy', scale=1, label='y_dot_1')
+#             # Plot y_dot_2 (red arrow)
+#             q2 = self.ax.quiver(y_init[0], y_init[1], y_dot_2[0], y_dot_2[1], color='red', angles='xy', scale_units='xy', scale=1, label='y_dot_2')
+#             self.quiver_handles.extend([q1, q2])
+
+
+#             self.ax.set_title(f"Phase Plot at t = {t_start:.2f}")
+
+#         #plt.draw()
+
+
+
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
 class PhasePlotAnimation:
     def __init__(self, initial_conditions):
         self.initial_conditions = initial_conditions
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
-        self.quiver_handles = []
-        self.FlagInit = True
+        self.frames = []  # store all the arrows for each frame
 
-    def update(self, A_matrix_1, A_matrix_2, t_start):
-        """
-        y_init_list: list of initial condition vectors (each is shape (2,))
-        A_matrix_1, A_matrix_2: matrices to multiply (each is shape (2,2))
-        t: current time (optional, for title)
-        """
-        # Remove previous quivers
+    def compute_frame(self, A_matrix_1, A_matrix_2, t_start):
+        """Compute and return a list of arrow data for a frame."""
         y_init_list = self.initial_conditions
-        for handle in self.quiver_handles:
-            handle.remove()
-        self.quiver_handles = []
-
+        arrows = []
         for y_init in y_init_list:
             y_dot_1 = A_matrix_1 @ y_init
             y_dot_2 = A_matrix_2 @ y_init
-            # Plot y_dot_1 (blue arrow)
-            q1 = self.ax.quiver(y_init[0], y_init[1], y_dot_1[0], y_dot_1[1], color='blue', angles='xy', scale_units='xy', scale=1, label='y_dot_1')
-            # Plot y_dot_2 (red arrow)
-            q2 = self.ax.quiver(y_init[0], y_init[1], y_dot_2[0], y_dot_2[1], color='red', angles='xy', scale_units='xy', scale=1, label='y_dot_2')
-            self.quiver_handles.extend([q1, q2])
+            arrows.append((y_init[0], y_init[1], y_dot_1[0], y_dot_1[1], y_dot_2[0], y_dot_2[1]))
+        self.frames.append((t_start, arrows))
 
-
-            self.ax.set_title(f"Phase Plot at t = {t_start:.2f}")
-
-        #plt.draw()
