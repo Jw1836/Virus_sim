@@ -146,7 +146,6 @@ def find_avg(node_list, n, k):
             concentration = this_node.v_1
         else:
             concentration = this_node.v_2
-
         sum = sum + concentration
     return sum / n
 
@@ -204,7 +203,7 @@ if __name__ == "__main__":
     # n = 2
     # m = 0
     #alpha = 0.1 # rate of infection from rnode to rnode
-    delta_1 = .1 # recovery rate 1
+    delta_1 = .4 # recovery rate 1
     delta_2 = .2 # recovery rate 2 
     beta_1 = 1
     beta_2 = 1
@@ -212,7 +211,7 @@ if __name__ == "__main__":
     # v_2_init = 0.5
     scaling = 5
     bad_guys_1 = [0, 2, 8]
-    bad_guys_2 = [1, 3, 5, 7]
+    bad_guys_2 = [1, 3, 5, 7] 
     # bad_guys_1 = [0]
     # bad_guys_2 = [1]
     nodes = []
@@ -252,22 +251,10 @@ if __name__ == "__main__":
     ##### PHase Plot Stuff####
 
         #for each time step:
-    exit_loop = False
-    # initial_conditions = [
-    #             [0, 0], [0, .25], [0, 0.5], [0, 0.75], [0, .9],
-    #             [0.25, 0], [0.25, .25], [0.25, 0.5], [0.25, 0.75], [0.25, .9],
-    #             [0.5, 0], [0.5, .25], [0.5, 0.5], [0.5, 0.75], [0.5, .9],
-    #             [0.75, 0], [0.75, .25], [0.75, 0.5], [0.75, 0.75], [0.75, .9]
-    #         ]
-    # num_partitions = 10
-    # vals = np.linspace(0, 1, num_partitions)
-    # initial_conditions = [[x, y] for x in vals for y in vals]
-    # phase_anim = PhasePlotAnimation(initial_conditions)
-
     while t_start < sim_time:
-        # print("virus")
-        # for i in range(len(nodes)):
-        #     print(nodes[i].v_1, nodes[i].v_2)
+        print("virus")
+        for i in range(len(nodes)):
+            print(nodes[i].v_1, nodes[i].v_2)
         #beta's are time varying: (infection rate for population nodes)
         scaling = 0.5
         beta_1_offset = .5
@@ -327,7 +314,7 @@ if __name__ == "__main__":
 
 
 
-#plt.show()  # Display the final animation
+plt.show()  # Display the final animation
 
 
 
