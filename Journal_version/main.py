@@ -5,60 +5,25 @@ import random
 import numpy as np 
 import matplotlib.pyplot as plt
 import sys
-import math
+
 #helper functions start here
-def calculate_alpha_jl(j, l, nodes, n): #resource j to resource l infection rate
-    pos_j = np.array(nodes[n + j].position)
-    pos_l = np.array(nodes[n + l].position)
-    d = np.linalg.norm(pos_j - pos_l)
-    if d < 10:
-        return np.exp(-d**2)
-    else:
-        return 0
-def sum_alpha_k(p, q, n):
-    sum = 0
-    for i in range(q):
-        sum = sum + calculate_alpha_jl(p, i, nodes, n)
-    return sum
-
-def get_A_k_w(k, nodes, n):
-    q = len(nodes) - n
-    A_k_w = np.zeros((q, q))
-    for i in range(q):
-        for j in range(q):
-            A_k_w[i, j] = calculate_alpha_jl(i, j, nodes, n) - sum_alpha_k(i, q, n)
-    return A_k_w
-
-def calculate_bet_awk_ij(i, j, nodes, k, n, r=10):
-    #for now, just do distance between the jth resource node and the ith pop node
-    pos_i = np.array(nodes[i].position)
-    pos_j = np.array(nodes[n + j].position)
-    d = np.linalg.norm(pos_i - pos_j)
-    if d < r:
-        weight = np.exp(-d**2)
-    else:
-        weight = 0
-    return weight
-
 def get_B_k_w(n, nodes, k):
     m = len(nodes) - n
-    B_k_w = np.zeros((n,m))
+    B_k = np.zeros((n,m))
     for i in range(n):
         for j in range(m):
+            this_node = nodes[j+ n]
             if(k == 1):
-                w_j = nodes[n + j].v_1
+                val = this_node.r_to_n_infection_rate_1 
             elif(k == 2):
-                w_j = nodes[n + j].v_2
-
-            beta_wk_ij = calculate_bet_awk_ij(i, j, nodes, k, n)
-            val = beta_wk_ij * w_j
-            #print(beta_wk_ij, w_j, val)
-            if(math.isnan(val) == True or math.isnan(w_j) == True):
+                val = this_node.r_to_n_infection_rate_2 
+            else:
+                print("such a k virus doesnt exist")
                 sys.exit()
 
-            B_k_w[i, j] = val
+            B_k[i, j] = val
 
-    return B_k_w
+    return B_k
                 
 def get_B_k(A, n, nodes, k):
     B_k = np.zeros((n,n))
@@ -74,6 +39,7 @@ def get_B_k(A, n, nodes, k):
                 sys.exit()
 
             B_k[i, j] = val
+
     return B_k
                 
 
@@ -86,7 +52,7 @@ def get_adj_matrix(nodes, n, r=10):
             pos_i = np.array(nodes[i].position)
             pos_j = np.array(nodes[j].position)
             d = np.linalg.norm(pos_i - pos_j)
-            weight = 0
+
             if d < r:
                 weight = np.exp(-d**2)
                 adj_matrix[i, j] = weight
@@ -102,7 +68,6 @@ def get_adj_matrix_w(nodes, n, r=10):
             pos_i = np.array(nodes[n + i].position)
             pos_j = np.array(nodes[n + j].position)
             d = np.linalg.norm(pos_i - pos_j)
-            weight = 0
 
             if d < r:
                 weight = np.exp(-d**2)
@@ -146,7 +111,7 @@ def find_avg(node_list, n, k):
         sum = sum + concentration
     return sum / n
 
-def diff_equation(k, nodes):
+def diff_equation(k, nodes, alpha):
         A = get_adj_matrix(nodes, n, r=10)
         # k = 1
         x_k_vec = get_x_vec(nodes, k, n)
@@ -162,7 +127,7 @@ def diff_equation(k, nodes):
         delta_k_w = nodes[-1].delta_1_w if k == 1 else nodes[-1].delta_2_w
         D_k = np.eye(n) * delta_k
         D_k_w = np.eye(m) * delta_k_w
-        A_k_w =  get_A_k_w(k, nodes, n)
+        A_k_w =  [[alpha for _ in range(m)] for _ in range(m)] - alpha * m * np.eye(m)
         A_k_w_diag = np.diag(np.diag(A_k_w))
         #start building the full block matrices for k= 1
         y_k_1 = np.block([
@@ -177,12 +142,10 @@ def diff_equation(k, nodes):
             [np.diag(x_2_vec.flatten()), np.zeros((n, m))],
             [np.zeros((m, m + n))]
         ])
-
         B_k_f = np.block([
             [B_k, B_k_w],
             [C_k_w, A_k_w - A_k_w_diag]
         ])
-
         D_k_f= np.block([
             [D_k, np.zeros((n, m))],
             [np.zeros((m, n)), D_k_w - A_k_w_diag]
@@ -194,25 +157,36 @@ def diff_equation(k, nodes):
 
 if __name__ == "__main__":
     n = 7 # number of population nodes
+<<<<<<< HEAD
     m = 2 # number of resource nodes
     #alpha = 0.1 # rate of infection from rnode to rnode
     delta_1 = .4 # recovery rate 1
     delta_2 = .2 # recovery rate 2 
     beta_1 = 1
     beta_2 = 1
+=======
+    m = 2 # number of resource nodes 
+    alpha = 0.1 # rate of infection from rnode to rnode
+    beta_1 = 1 # infection rate virus 1
+    delta_1 = 0.5 # recovery rate 1
+    beta_2 = 1 # infection rate virus 2
+    delta_2 = 0.5 # recovery rate 2 
+>>>>>>> parent of 771bb34 (08/20/2025)
     # v_1_init = 0.5 
     # v_2_init = 0.5
+    r_to_n_infection_rate_1 = alpha
+    r_to_n_infection_rate_2 = alpha
     scaling = 5
-    bad_guys_1 = [0, 2, 8]
-    bad_guys_2 = [1, 3, 5, 7]
+    bad_guys_1 = [0, 2, 6]
+    bad_guys_2 = [1, 3, 5]
     nodes = []
     for i in range(n + m):
         v_1_init = 0
         v_2_init = 0
         if(i in bad_guys_1):
-            v_1_init = 0.25
+            v_1_init = 0.1
         elif(i in bad_guys_2):
-            v_2_init = 0.25
+            v_2_init = 0.1
         else:
             pass 
 
@@ -222,11 +196,13 @@ if __name__ == "__main__":
         if(i < n):
             nodes.append(PopulationNode(x_pos, y_pos, beta_1, delta_1, beta_2, delta_2, v_1_init, v_2_init))
         else:
-            nodes.append(ResourceNode(x_pos, y_pos, v_1_init, v_2_init, delta_1, delta_2))
+            nodes.append(ResourceNode(x_pos, y_pos, r_to_n_infection_rate_1, r_to_n_infection_rate_2, v_1_init, v_2_init, delta_1, delta_2))
+
 
     # Create and run animation
     # anim = Animation()
     t_start = 0
+<<<<<<< HEAD
 <<<<<<< HEAD
     sim_time =  1000 #2000
     delta_t = .05
@@ -234,6 +210,10 @@ if __name__ == "__main__":
     sim_time = 2000
     delta_t = 0.04
 >>>>>>> parent of 834bbca (PHASE PLOTS)
+=======
+    sim_time = 30
+    delta_t = 0.05
+>>>>>>> parent of 771bb34 (08/20/2025)
     length = 5
     center = 2.5
     avg_val_list_v1 = []
@@ -246,6 +226,7 @@ if __name__ == "__main__":
         #for each time step:
     exit_loop = False
     while t_start < sim_time:
+<<<<<<< HEAD
         print("virus")
         for i in range(len(nodes)):
             print(nodes[i].v_1, nodes[i].v_2)
@@ -259,11 +240,17 @@ if __name__ == "__main__":
 >>>>>>> parent of 834bbca (PHASE PLOTS)
         beta_1_new = beta_1_offset + scaling * np.sin(t_start / 10)
         beta_2_new = beta_2_offset + np.sin(t_start / 10)
+=======
+        #beta's are time varying: (infection rate)
+        beta_1_new = 1 + np.sin(t_start / 100)
+        beta_2_new =.8 + np.sin(t_start / 100)
+>>>>>>> parent of 771bb34 (08/20/2025)
         for l in range(n):
             this_node = nodes[l]
             this_node.beta_1 = beta_1_new
             this_node.beta_2 = beta_2_new
         #for each timestep solve the differential equation
+<<<<<<< HEAD
         y_2_v1, B_1_f, D_1_f = diff_equation(1, nodes)
         y_2_v2, B_2_f, D_2_f = diff_equation(2, nodes)
 
@@ -275,6 +262,10 @@ if __name__ == "__main__":
                 break
         #print(B_2_f)
 
+=======
+        y_2_v1, B_1_f, D_1_f = diff_equation(1, nodes, alpha)
+        y_2_v2, B_2_f, D_2_f = diff_equation(2, nodes, alpha)
+>>>>>>> parent of 771bb34 (08/20/2025)
         
         eigvals_1, _ = np.linalg.eig(B_1_f - D_1_f)
         eig_val_v1.append(np.max(eigvals_1))
